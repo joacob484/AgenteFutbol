@@ -1,6 +1,5 @@
 using UnityEngine;
 using TMPro;
-using AF.UI.Util;
 
 namespace AF.UI.Views
 {
@@ -20,8 +19,7 @@ namespace AF.UI.Views
         {
             if (GameRoot.Current == null) return;
             moneyTxt.text = $"€ {GameRoot.Current.Agent.Money:N0}";
-            repTxt.text = $"REP {GameRoot.Current.Agent.Reputation} " +
-                          $"· Slots {GameRoot.Current.Agent.RepresentedIds.Count}/{GameRoot.Current.Agent.SlotLimit}";
+            repTxt.text = $"REP {GameRoot.Current.Agent.Reputation} · Slots {GameRoot.Current.Agent.RepresentedIds.Count}/{GameRoot.Current.Agent.SlotLimit}";
         }
     }
 }
