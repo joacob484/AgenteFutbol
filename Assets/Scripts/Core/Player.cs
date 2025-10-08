@@ -1,25 +1,14 @@
-using System;
-using AF.Core;
-
 namespace AF.Core
 {
     [System.Serializable]
     public class Player
     {
-        public string Id;
-        public string Name;
+        public string Id;        // requerido por generadores/listas
+        public string FullName;
         public int Age;
-        public Position Pos;
-        public int Ovr;     // overall
-        public int Pot;     // potential
-        public string ClubId; // null si libre
-        public int ContractYears;
-        public Personality Personality;
-        public double MarketValueM; // millones €
-
-        // Relación con el agente (si lo representa)
-        public float AgentAffinity; // -1..+1
-
-        public Player Clone() => (Player)MemberwiseClone();
+        public int Overall;      // 1..100
+        public int Potential;    // ← lo pide TalentsView
+        public string Position;  // "GK","DF","MF","FW"
+        public string ClubId;    // vínculo simple
     }
 }
