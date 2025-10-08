@@ -1,0 +1,6 @@
+{
+  "regions": [
+    {"id": "eu", "name": "Europe"},
+    {"id": "sa", "name": "South America"}
+  ]
+}

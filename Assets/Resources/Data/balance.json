@@ -1,0 +1,15 @@
+{
+  "BaseSlots": 5,
+  "ReputationThresholds": [10, 25, 50, 80, 120],
+  "SlotsPerThreshold": [3, 4, 5, 6, 8],
+  "CommissionTransfer": 0.12,
+  "CommissionRenewal": 0.05,
+  "StadiumL2CostM": 5,
+  "StadiumL3CostM": 20,
+  "AcademyL2CostM": 2,
+  "AcademyL3CostM": 8,
+  "MarketingL2CostM": 1,
+  "MarketingL3CostM": 5,
+  "MedicalL2CostM": 1,
+  "MedicalL3CostM": 4
+}
