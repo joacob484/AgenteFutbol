@@ -7,8 +7,8 @@ namespace AF.Core
     {
         public string Id;
         public string Name;
-        public AF.Core.Region Region;
-        public int Tier; // 1 = máxima
-        public List<string> Clubs = new();
+        public Region Region;
+        public int Tier;
+        public List<string> Clubs = new(); // ← WorldGenerator agrega ids acá
     }
 }

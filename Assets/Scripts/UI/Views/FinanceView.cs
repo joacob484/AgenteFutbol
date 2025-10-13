@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using AF.Core;
 
 namespace AF.UI.Views
 {

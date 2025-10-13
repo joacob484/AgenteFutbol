@@ -1,3 +1,4 @@
+using AF.Services.Game; // para RandomService.Range(...)
 using System.Collections.Generic;
 using UnityEngine;
 using AF.Core;

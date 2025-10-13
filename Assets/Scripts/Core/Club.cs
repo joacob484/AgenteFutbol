@@ -14,12 +14,12 @@ namespace AF.Core
     [System.Serializable]
     public class Club
     {
-        public string Id;                       // ← usado por WorldGenerator
+        public string Id;
         public string Name;
         public int Reputation;
-        public int Budget;
-        public string LeagueId;                 // ← usado por WorldGenerator
-        public List<string> Squad = new();      // ← ids de Players
+        public long Budget;                  // ← long (WorldGenerator pasa long)
+        public string LeagueId;              // vínculo con liga
+        public List<string> Squad = new();   // ids de jugadores
         public ClubFacilities Facilities = new ClubFacilities();
     }
 }
