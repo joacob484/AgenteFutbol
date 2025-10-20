@@ -3,55 +3,67 @@ using AF.Core;
 
 namespace AF.Services.Economy
 {
+    /// <summary>
+    /// Ledger simple + helpers de comisión y gasto/ingreso.
+    /// </summary>
     public static class FinanceService
     {
-        private static readonly List<string> _ledger = new();
-        public static IReadOnlyList<string> Ledger => _ledger.AsReadOnly();
+        private static readonly List<FinanceEntry> _ledger = new();
 
-        private static void Log(string text)
+        // ===== API que usa la UI =====
+        public static List<FinanceEntry> GetLedger(SaveData save)
         {
-            if (!string.IsNullOrEmpty(text)) _ledger.Insert(0, text);
+            return new List<FinanceEntry>(_ledger);
         }
 
-        public static void AddMoney(SaveData s, long amount, string reason = null)
+        public static void LogWeeklySummary(SaveData save)
         {
-            if (s == null) return;
+            if (save == null) return;
+            AddEntry($"Semana {save.Time.Week}", 0);
+        }
+
+        // ===== API que usan otros servicios =====
+        public static long CommissionFromFee(double feeM, float pct) =>
+            (long)System.Math.Round(feeM * 1_000_000d * pct);
+
+        public static long CommissionFromRenewal(long yearlyWage, float pct) =>
+            (long)System.Math.Round(yearlyWage * pct);
+
+        /// <summary> Suma dinero al agente y registra en ledger. </summary>
+        public static void AddMoney(SaveData s, long amount, string label)
+        {
+            if (s == null || s.Agent == null) return;
             s.Agent.Money += amount;
-            Log($"+ €{amount:N0}" + (string.IsNullOrEmpty(reason) ? "" : $" · {reason}"));
+            AddEntry(label, amount);
         }
 
-        public static bool SpendMoney(SaveData s, long amount, string reason = null)
+        /// <summary> Intenta gastar dinero del agente. Registra el egreso si procede. </summary>
+        public static bool TrySpend(SaveData s, long cost, string label)
         {
-            if (s == null) return false;
-            if (s.Agent.Money < amount)
-            {
-                Log($"Bloqueado: saldo insuficiente para {reason} (necesita €{amount:N0})");
-                return false;
-            }
-            s.Agent.Money -= amount;
-            Log($"− €{amount:N0}" + (string.IsNullOrEmpty(reason) ? "" : $" · {reason}"));
+            if (s == null || s.Agent == null) return false;
+            if (s.Agent.Money < cost) return false;
+            s.Agent.Money -= cost;
+            AddEntry(label, -cost);
             return true;
         }
 
-        // 👇 Alias para compatibilidad con código existente (p.ej. FacilitiesService)
-        public static bool TrySpend(SaveData s, long amount, string reason = null) =>
-            SpendMoney(s, amount, reason);
-
-        public static void LogWeeklySummary(SaveData s)
+        // ===== Interno =====
+        private static void AddEntry(string label, long amount)
         {
-            if (s == null) return;
-            Log($"Semana {s.Time.Week}: Dinero €{s.Agent.Money:N0} · REP {s.Agent.Reputation}");
+            _ledger.Add(new FinanceEntry
+            {
+                Week   = GameRoot.Current?.Time?.Week ?? 0,
+                Label  = label,
+                Amount = amount
+            });
+            if (_ledger.Count > 200) _ledger.RemoveAt(0);
         }
+    }
 
-        public static long CommissionFromFee(double feeM, float commissionRate)
-        {
-            var gross = (long)(feeM * 1_000_000.0);
-            return (long)System.Math.Round(gross * commissionRate);
-        }
-
-        public static long CommissionFromRenewal(long yearlyWage, float commissionRate)
-        {
-            return (long)System.Math.Round(yearlyWage * commissionRate);
-        }
+    public class FinanceEntry
+    {
+        public int Week;
+        public string Label;
+        public long Amount;
     }
 }

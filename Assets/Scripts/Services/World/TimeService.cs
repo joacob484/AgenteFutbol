@@ -18,8 +18,7 @@ namespace AF.Services.World
 
             save.Time.NextWeek();
 
-            // Resumen semanal
-            FinanceService.LogWeeklySummary(save);
+            // Resumen semanal → ahora usamos NewsService.Add (existe en tu NewsService)
             AF.Services.World.NewsService.Add(
                 $"Cierre de semana {save.Time.Week} · REP {save.Agent.Reputation} · Representados {save.Agent.RepresentedIds.Count}"
             );
@@ -27,7 +26,10 @@ namespace AF.Services.World
             // Mercado semanal
             AF.Services.Economy.MarketService.TickWeek(save);
 
-            // 👇 Namespace correcto para AutoSave
+            // Ledger semanal
+            FinanceService.LogWeeklySummary(save);
+
+            // Autosave
             AF.Services.Game.AutoSave.QueueSave();
         }
     }

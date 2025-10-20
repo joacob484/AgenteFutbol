@@ -4,9 +4,23 @@ namespace AF.Services.World
 {
     public static class NewsService
     {
-        static readonly List<string> _news = new();
-        public static void Clear() => _news.Clear();
-        public static void Add(string msg) { if (!string.IsNullOrEmpty(msg)) _news.Insert(0, msg); }
-        public static IReadOnlyList<string> All() => _news.AsReadOnly();
+        private static readonly List<string> _feed = new();
+
+        public static void Add(string msg)
+        {
+            if (string.IsNullOrEmpty(msg)) return;
+            _feed.Add(msg);
+            if (_feed.Count > 50) _feed.RemoveAt(0);
+        }
+
+        public static List<string> GetFeed()
+        {
+            return new List<string>(_feed);
+        }
+
+        public static void Clear()
+        {
+            _feed.Clear();
+        }
     }
 }

@@ -5,30 +5,50 @@ using AF.Services.Economy;
 
 namespace AF.UI.Views
 {
+    /// <summary>
+    /// Muestra dinero, reputación y badge de ofertas pendientes.
+    /// </summary>
     public class HeaderBar : MonoBehaviour
     {
-        [SerializeField] TMP_Text moneyTxt;
-        [SerializeField] TMP_Text repTxt;
+        [SerializeField] private TextMeshProUGUI moneyTxt;
+        [SerializeField] private TextMeshProUGUI repTxt;
+        [SerializeField] private TextMeshProUGUI offersBadge;
 
-        // ⬇️ NUEVO (opcional): badge de ofertas pendientes
-        [SerializeField] TMP_Text offersBadge;
-
-        void OnEnable()  => InvokeRepeating(nameof(Refresh), 0f, 0.4f);
-        void OnDisable() => CancelInvoke(nameof(Refresh));
-
-        void Refresh()
+        void OnEnable()
         {
-            var s = GameRoot.Current;
-            if (s == null) return;
+            // Refresco ligero y periódico (barato)
+            InvokeRepeating(nameof(Refresh), 0.1f, 0.5f);
+        }
 
-            if (moneyTxt) moneyTxt.text = $"€ {s.Agent.Money:N0}";
-            if (repTxt)   repTxt.text   = $"REP {s.Agent.Reputation} · Slots {s.Agent.RepresentedIds.Count}/{s.Agent.SlotLimit}";
+        void OnDisable()
+        {
+            CancelInvoke(nameof(Refresh));
+        }
 
-            if (offersBadge)
+        public void Refresh()
+        {
+            var save = GameRoot.Current;
+            if (save == null) return;
+
+            if (moneyTxt != null)
+                moneyTxt.text = $"€ {save.Agent.Money:N0}";
+
+            if (repTxt != null)
+                repTxt.text = $"REP {save.Agent.Reputation}";
+
+            // Badge de ofertas pendientes
+            if (offersBadge != null)
             {
-                int n = MarketService.PendingCount(s);
-                offersBadge.gameObject.SetActive(n > 0);
-                if (n > 0) offersBadge.text = n.ToString();
+                int count = MarketService.PendingOffersCount(save);
+                if (count > 0)
+                {
+                    offersBadge.gameObject.SetActive(true);
+                    offersBadge.text = $"Ofertas: {count}";
+                }
+                else
+                {
+                    offersBadge.gameObject.SetActive(false);
+                }
             }
         }
     }
