@@ -67,6 +67,11 @@ namespace AF.UI
             Instance?.Show(panelName);
         }
 
+        public static void Go(string panelName)
+        {
+            Instance?.Show(panelName);
+        }
+
         private IEnumerator Swap(string target)
         {
             CanvasGroup toHide = null;

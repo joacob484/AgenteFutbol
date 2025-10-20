@@ -1,95 +1,104 @@
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using AF.Core;
+using AF.Services.World;
+using AF.Services.Game;     // ActionsService
+using UnityEngine.UI;
 
 namespace AF.UI.Views
 {
+    /// <summary>
+    /// Lista de jugadores representados con acciones por fila.
+    /// Requiere: content (Scroll/Vertical), rowPrefab con PlayerRow.
+    /// </summary>
     public class PlayersView : MonoBehaviour
     {
+        [Header("UI")]
         [SerializeField] private RectTransform content;
         [SerializeField] private GameObject rowPrefab;
-        [SerializeField] private TMP_InputField search;
+        [SerializeField] private TMP_Text emptyState;
 
-        private void OnEnable() => Build();
-        public void OnSearchChanged(string _) => Build();
+        private readonly List<Player> _cache = new();
 
-        void Build()
+        private void OnEnable() => Rebuild();
+
+        public void Rebuild()
         {
-            foreach (Transform t in content) Destroy(t.gameObject);
-
             var s = GameRoot.Current;
-            var q = (search?.text ?? "").Trim().ToLower();
+            foreach (Transform t in content) Destroy(t.gameObject);
+            _cache.Clear();
 
-            var list = s.Agent.RepresentedIds
-                .Where(id => s.World.Players.ContainsKey(id))
-                .Select(id => s.World.Players[id])
-                .Where(p => string.IsNullOrEmpty(q) || p.Name.ToLower().Contains(q))
-                .OrderByDescending(p => p.Ovr)
-                .ToList();
-
-            foreach (var p in list)
+            if (s == null || s.Agent.RepresentedIds.Count == 0)
             {
+                if (emptyState) emptyState.gameObject.SetActive(true);
+                return;
+            }
+            if (emptyState) emptyState.gameObject.SetActive(false);
+
+            foreach (var pid in s.Agent.RepresentedIds)
+            {
+                if (!s.World.Players.TryGetValue(pid, out var p)) continue;
+                _cache.Add(p);
+
                 var go = Instantiate(rowPrefab, content);
-                var ui = go.GetComponent<PlayerRowUI>();
-                ui.Bind(p, OnRelease, OnTransfer, OnRenew);
+                var row = go.GetComponent<PlayerRow>();
+                if (row != null) row.Bind(p, OnProposeTransfer);
             }
         }
 
-        void OnRelease(Player p)
+        private void OnProposeTransfer(Player p)
         {
             var s = GameRoot.Current;
-            s.Agent.RepresentedIds.Remove(p.Id);
-            AF.Services.World.NewsService.Add($"Dejaste de representar a {p.Name}.");
-            Build();
-        }
+            if (s == null || p == null) return;
 
-        void OnTransfer(Player p)
-        {
-            var ok = AF.Services.Game.ActionsService.ProposeTransfer(GameRoot.Current, p);
-            if (!ok) AF.Services.World.NewsService.Add($"No se pudo transferir a {p.Name} (sin presupuesto o sin club).");
-        }
-
-        void OnRenew(Player p)
-        {
-            var ok = AF.Services.Game.ActionsService.RenewContract(GameRoot.Current, p);
-            if (!ok) AF.Services.World.NewsService.Add($"No se pudo renovar a {p.Name} (debe tener club).");
+            var ok = ActionsService.ProposeTransfer(s, p);
+            if (!ok)
+            {
+                AF.Services.World.NewsService.Add($"No se pudo proponer traspaso para {p.Name}.");
+            }
+            // El propio ActionsService ya agrega News y AutoSave si corresponde.
+            // Refrescamos por si se movió de club u ocurrió algo.
+            Rebuild();
         }
     }
 
-    public class PlayerRowUI : MonoBehaviour
+    /// <summary>
+    /// Script para el prefab de fila. Debe tener:
+    /// - TMP_Text: nameTxt, clubTxt, ovrPotTxt, ageTxt
+    /// - Button: transferBtn (Proponer traspaso)
+    /// </summary>
+    public class PlayerRow : MonoBehaviour
     {
         [SerializeField] TMP_Text nameTxt;
         [SerializeField] TMP_Text clubTxt;
-        [SerializeField] TMP_Text ovrTxt;
-        [SerializeField] TMP_Text potTxt;
-        [SerializeField] TMP_Text contractTxt;
-        [SerializeField] Button   releaseBtn;
-        [SerializeField] Button   transferBtn;
-        [SerializeField] Button   renewBtn;
+        [SerializeField] TMP_Text ovrPotTxt;
+        [SerializeField] TMP_Text ageTxt;
+        [SerializeField] Button transferBtn;
 
-        Player _p;
+        private Player _p;
+        private System.Action<Player> _onTransfer;
 
-        public void Bind(Player p,
-            System.Action<Player> onRelease,
-            System.Action<Player> onTransfer,
-            System.Action<Player> onRenew)
+        public void Bind(Player p, System.Action<Player> onTransfer)
         {
             _p = p;
-            nameTxt.text = p.Name;
-            clubTxt.text = string.IsNullOrEmpty(p.ClubId) ? "Libre" : p.ClubId;
-            ovrTxt.text  = $"OVR {p.Ovr}";
-            potTxt.text  = $"POT {p.Pot}";
-            contractTxt.text = $"Contrato: {(p.ContractYears<=0 ? "N/A" : p.ContractYears+" años")}";
+            _onTransfer = onTransfer;
 
-            releaseBtn.onClick.RemoveAllListeners();
-            transferBtn.onClick.RemoveAllListeners();
-            renewBtn.onClick.RemoveAllListeners();
+            var s = GameRoot.Current;
+            string clubName = "-";
+            if (!string.IsNullOrEmpty(p.ClubId) && s.World.Clubs.TryGetValue(p.ClubId, out var c))
+                clubName = c.Name;
 
-            releaseBtn.onClick.AddListener(()=> onRelease?.Invoke(_p));
-            transferBtn.onClick.AddListener(()=> onTransfer?.Invoke(_p));
-            renewBtn.onClick.AddListener(()=> onRenew?.Invoke(_p));
+            if (nameTxt)   nameTxt.text   = p.Name;
+            if (clubTxt)   clubTxt.text   = clubName;
+            if (ovrPotTxt) ovrPotTxt.text = $"OVR {p.Ovr} / POT {p.Potential}";
+            if (ageTxt)    ageTxt.text    = $"{p.Age}";
+
+            if (transferBtn)
+            {
+                transferBtn.onClick.RemoveAllListeners();
+                transferBtn.onClick.AddListener(() => _onTransfer?.Invoke(_p));
+            }
         }
     }
 }

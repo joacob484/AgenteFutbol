@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using AF.Services.Save;
 
 namespace AF.UI.Views
 {
@@ -15,14 +14,13 @@ namespace AF.UI.Views
             storageDropdown.ClearOptions();
             storageDropdown.AddOptions(new System.Collections.Generic.List<string> { "Local" });
             storageDropdown.onValueChanged.AddListener(OnStorageChanged);
-            backendTxt.text = $"Backend: {SaveService.BackendName}";
+            backendTxt.text = "Backend: Local";
         }
 
         void OnStorageChanged(int index)
         {
             // Por ahora solo Local
-            SaveService.SetBackend(new LocalBackend());
-            backendTxt.text = $"Backend: {SaveService.BackendName}";
-        }
+            backendTxt.text = "Backend: Local";
+        }    
     }
 }

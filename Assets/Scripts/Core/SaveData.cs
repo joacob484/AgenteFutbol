@@ -7,7 +7,10 @@ namespace AF.Core
     {
         public Agent Agent = new Agent();
         public WorldData World = new WorldData();
-        public TimeState Time = new TimeState();   // ← usado por TimeService
+        public TimeState Time = new TimeState();
+
+        // ⬇️ NUEVO: ofertas de mercado pendientes (persistentes)
+        public List<MarketOfferDTO> PendingOffers = new();
     }
 
     [System.Serializable]
@@ -22,12 +25,11 @@ namespace AF.Core
     [System.Serializable]
     public class TimeState
     {
-        public int Week = 1;           // 1..52
-        public int Day = 1;            // 1..7 (si lo usás)
+        public int Week = 1;     // 1..52
+        public int Day = 1;      // 1..7 (si lo usás)
         public int Season = 1;
         public int Tick = 0;
 
-        // ⬇️ NUEVO: requerido por TimeService
         public int TransferWindow = 0;
 
         public void NextDay()
@@ -43,5 +45,18 @@ namespace AF.Core
             if (Week > 52) { Week = 1; Season++; }
             Tick++;
         }
+    }
+
+    /// <summary> DTO serializable para ofertas de mercado. </summary>
+    [System.Serializable]
+    public class MarketOfferDTO
+    {
+        public string PlayerId;
+        public string FromClubId;
+        public string ToClubId;
+        public long Fee;         // en euros
+        public long YearlyWage;  // en euros
+        public int Years;
+        public float CommissionRate;
     }
 }

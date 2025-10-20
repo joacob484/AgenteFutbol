@@ -15,18 +15,32 @@ namespace AF.Services.Economy
 
         public static void AddMoney(SaveData s, long amount, string reason = null)
         {
-            if (amount == 0) return;
+            if (s == null) return;
             s.Agent.Money += amount;
-            Log($"Ingreso: €{amount:N0}" + (string.IsNullOrEmpty(reason) ? "" : $" ({reason})"));
+            Log($"+ €{amount:N0}" + (string.IsNullOrEmpty(reason) ? "" : $" · {reason}"));
         }
 
-        public static bool TrySpend(SaveData s, long amount, string reason)
+        public static bool SpendMoney(SaveData s, long amount, string reason = null)
         {
-            if (amount < 0) amount = -amount;
-            if (s.Agent.Money < amount) return false;
+            if (s == null) return false;
+            if (s.Agent.Money < amount)
+            {
+                Log($"Bloqueado: saldo insuficiente para {reason} (necesita €{amount:N0})");
+                return false;
+            }
             s.Agent.Money -= amount;
-            Log($"Gasto: €{amount:N0}" + (string.IsNullOrEmpty(reason) ? "" : $" ({reason})"));
+            Log($"− €{amount:N0}" + (string.IsNullOrEmpty(reason) ? "" : $" · {reason}"));
             return true;
+        }
+
+        // 👇 Alias para compatibilidad con código existente (p.ej. FacilitiesService)
+        public static bool TrySpend(SaveData s, long amount, string reason = null) =>
+            SpendMoney(s, amount, reason);
+
+        public static void LogWeeklySummary(SaveData s)
+        {
+            if (s == null) return;
+            Log($"Semana {s.Time.Week}: Dinero €{s.Agent.Money:N0} · REP {s.Agent.Reputation}");
         }
 
         public static long CommissionFromFee(double feeM, float commissionRate)

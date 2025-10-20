@@ -1,33 +1,43 @@
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using AF.Core;
 
 namespace AF.Services.Save
 {
-    /// <summary>
-    /// Punto único para guardar/cargar SaveData en el backend elegido.
-    /// </summary>
     public static class SaveService
     {
-        static ISaveBackend _backend = new LocalBackend();
-        public static void SetBackend(ISaveBackend backend) => _backend = backend ?? _backend;
-
-        public static async Task<bool> SaveAsync(string slot, SaveData data)
+        // Siempre obtener el path en el hilo principal ANTES de ir a Task.Run
+        static string GetPath(string slot)
         {
-            var json = JsonUtility.ToJson(data, true);
-            return await _backend.SaveAsync(slot, json);
+            var dir = Application.persistentDataPath; // main thread
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            return Path.Combine(dir, $"{slot}.json");
         }
 
-        public static async Task<(bool ok, SaveData data)> LoadAsync(string slot)
+        public static Task<bool> ExistsAsync(string slot)
         {
-            var (ok, json) = await _backend.LoadAsync(slot);
-            if (!ok || string.IsNullOrEmpty(json)) return (false, null);
-            var data = JsonUtility.FromJson<SaveData>(json);
-            return (true, data);
+            var path = GetPath(slot); // main thread
+            return Task.Run(() => File.Exists(path));
         }
 
-        public static Task<string[]> ListAsync() => _backend.ListAsync();
-        public static Task<bool> DeleteAsync(string slot) => _backend.DeleteAsync(slot);
-        public static string BackendName => _backend.Name;
+        public static Task SaveAsync(string slot, SaveData data)
+        {
+            var path = GetPath(slot); // main thread
+            var json = JsonUtility.ToJson(data, prettyPrint: true);
+            return Task.Run(() => File.WriteAllText(path, json));
+        }
+
+        public static Task<(bool ok, SaveData data)> LoadAsync(string slot)
+        {
+            var path = GetPath(slot); // main thread
+            return Task.Run<(bool, SaveData)>(() =>
+            {
+                if (!File.Exists(path)) return (false, null);
+                var json = File.ReadAllText(path);
+                var data = JsonUtility.FromJson<SaveData>(json);
+                return (data != null, data);
+            });
+        }
     }
 }
